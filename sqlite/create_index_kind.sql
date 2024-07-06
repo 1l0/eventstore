@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS kindidx ON event(kind)

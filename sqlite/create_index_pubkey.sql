@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS pubkeyprefix ON event(pubkey)

@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS timeidx ON event(created_at DESC)

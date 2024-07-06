@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS kindtimeidx ON event(kind, created_at DESC)
