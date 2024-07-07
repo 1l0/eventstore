@@ -63,9 +63,8 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 	var params []any
 
 	if len(filter.IDs) > 0 {
-		if len(filter.IDs) > 500 {
-			// too many ids, fail everything
-			return "", nil, nil
+		if len(filter.IDs) > b.QueryIDsLimit {
+			return "", nil, fmt.Errorf("too many ids (%d > %d)", len(filter.IDs), b.QueryIDsLimit)
 		}
 
 		for _, v := range filter.IDs {
@@ -76,8 +75,7 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 
 	if len(filter.Authors) > 0 {
 		if len(filter.Authors) > b.QueryAuthorsLimit {
-			// too many authors, fail everything
-			return "", nil, nil
+			return "", nil, fmt.Errorf("too many authors (%d > %d)", len(filter.Authors), b.QueryAuthorsLimit)
 		}
 
 		for _, v := range filter.Authors {
@@ -87,9 +85,8 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 	}
 
 	if len(filter.Kinds) > 0 {
-		if len(filter.Kinds) > 10 {
-			// too many kinds, fail everything
-			return "", nil, nil
+		if len(filter.Kinds) > b.QueryKindsLimit {
+			return "", nil, fmt.Errorf("too many kinds (%d > %d)", len(filter.Kinds), b.QueryKindsLimit)
 		}
 
 		for _, v := range filter.Kinds {
@@ -101,16 +98,14 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 	tagQuery := make([]string, 0, 1)
 	for _, values := range filter.Tags {
 		if len(values) == 0 {
-			// any tag set to [] is wrong
-			return "", nil, nil
+			return "", nil, fmt.Errorf("tag is empty")
 		}
 
 		// add these tags to the query
 		tagQuery = append(tagQuery, values...)
 
-		if len(tagQuery) > 10 {
-			// too many tags, fail everything
-			return "", nil, nil
+		if len(tagQuery) > b.QueryTagsLimit {
+			return "", nil, fmt.Errorf("too many tags (%d > %d)", len(tagQuery), b.QueryTagsLimit)
 		}
 	}
 
