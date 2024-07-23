@@ -34,7 +34,11 @@ func (b SQLiteBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch
 				return
 			}
 			evt.CreatedAt = nostr.Timestamp(timestamp)
-			ch <- &evt
+			select {
+			case ch <- &evt:
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
