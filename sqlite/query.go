@@ -115,9 +115,13 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 
 	// we use a very bad implementation in which we only check the tag values and
 	// ignore the tag names
-	for _, tagValue := range tagQuery {
-		conditions = append(conditions, `tags LIKE ? ESCAPE '\'`)
-		params = append(params, `%`+strings.ReplaceAll(tagValue, `%`, `\%`)+`%`)
+	if len(tagQuery) > 0 {
+		orTag := make([]string, len(tagQuery))
+		for i, tagValue := range tagQuery {
+			orTag[i] = `tags LIKE ? ESCAPE '\'`
+			params = append(params, `%`+strings.ReplaceAll(tagValue, `%`, `\%`)+`%`)
+		}
+		conditions = append(conditions, "("+strings.Join(orTag, "OR ")+")")
 	}
 
 	if filter.Since != nil {
