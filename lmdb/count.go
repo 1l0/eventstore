@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 
 	"github.com/PowerDNS/lmdb-go/lmdb"
+	bin "github.com/fiatjaf/eventstore/internal/binary"
 	"github.com/nbd-wtf/go-nostr"
-	nostr_binary "github.com/nbd-wtf/go-nostr/binary"
 )
 
 func (b *LMDBBackend) CountEvents(ctx context.Context, filter nostr.Filter) (int64, error) {
@@ -33,7 +33,7 @@ func (b *LMDBBackend) CountEvents(ctx context.Context, filter nostr.Filter) (int
 			if _, _, errsr := cursor.Get(q.startingPoint, nil, lmdb.SetRange); errsr != nil {
 				if operr, ok := errsr.(*lmdb.OpError); !ok || operr.Errno != lmdb.NotFound {
 					// in this case it's really an error
-					panic(err)
+					panic(operr)
 				} else {
 					// we're at the end and we just want notes before this,
 					// so we just need to set the cursor the last key, this is not a real error
@@ -71,7 +71,7 @@ func (b *LMDBBackend) CountEvents(ctx context.Context, filter nostr.Filter) (int
 					}
 
 					evt := &nostr.Event{}
-					if err := nostr_binary.Unmarshal(val, evt); err != nil {
+					if err := bin.Unmarshal(val, evt); err != nil {
 						return err
 					}
 
