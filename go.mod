@@ -16,12 +16,20 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.7
 	github.com/mattn/go-sqlite3 v1.14.18
+<<<<<<< HEAD
 	github.com/nbd-wtf/go-nostr v0.35.1-0.20240914040553-9e532256a76d
 	github.com/opensearch-project/opensearch-go/v4 v4.0.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/text v0.15.0
 	modernc.org/sqlite v1.30.1
+=======
+	github.com/nbd-wtf/go-nostr v0.36.2
+	github.com/opensearch-project/opensearch-go/v4 v4.0.0
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
+	golang.org/x/text v0.18.0
+>>>>>>> master
 )
 
 require (
@@ -65,7 +73,10 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
+<<<<<<< HEAD
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+=======
+>>>>>>> master
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
@@ -75,7 +86,7 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
