@@ -16,20 +16,12 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.7.7
 	github.com/mattn/go-sqlite3 v1.14.18
-<<<<<<< HEAD
-	github.com/nbd-wtf/go-nostr v0.35.1-0.20240914040553-9e532256a76d
-	github.com/opensearch-project/opensearch-go/v4 v4.0.0
-	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
-	golang.org/x/text v0.15.0
-	modernc.org/sqlite v1.30.1
-=======
 	github.com/nbd-wtf/go-nostr v0.36.2
 	github.com/opensearch-project/opensearch-go/v4 v4.0.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/text v0.18.0
->>>>>>> master
+	modernc.org/sqlite v1.33.1
 )
 
 require (
@@ -73,10 +65,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
-<<<<<<< HEAD
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-=======
->>>>>>> master
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
@@ -92,7 +81,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
-	modernc.org/libc v1.52.1 // indirect
+	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
