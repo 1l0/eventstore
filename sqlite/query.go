@@ -63,12 +63,12 @@ func makePlaceHolders(n int) string {
 }
 
 func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string, []any, error) {
-	var conditions []string
-	var params []any
+	conditions := make([]string, 0, 7)
+	params := make([]any, 0, 20)
 
 	if len(filter.IDs) > 0 {
 		if len(filter.IDs) > b.QueryIDsLimit {
-			return "", nil, fmt.Errorf("too many ids (%d > %d)", len(filter.IDs), b.QueryIDsLimit)
+			return "", nil, fmt.Errorf("too many ids: %d > %d", len(filter.IDs), b.QueryIDsLimit)
 		}
 
 		for _, v := range filter.IDs {
@@ -99,29 +99,27 @@ func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string
 		conditions = append(conditions, `kind IN (`+makePlaceHolders(len(filter.Kinds))+`)`)
 	}
 
-	tagQuery := make([]string, 0, 1)
+	// tags
+	totalTags := 0
+	// we use a very bad implementation in which we only check the tag values and ignore the tag names
 	for _, values := range filter.Tags {
 		if len(values) == 0 {
-			return "", nil, fmt.Errorf("tag is empty")
+			return "", nil, fmt.Errorf("any tag set to [] is wrong: %v", values)
 		}
 
-		// add these tags to the query
-		tagQuery = append(tagQuery, values...)
-
-		if len(tagQuery) > b.QueryTagsLimit {
-			return "", nil, fmt.Errorf("too many tags (%d > %d)", len(tagQuery), b.QueryTagsLimit)
-		}
-	}
-
-	// we use a very bad implementation in which we only check the tag values and
-	// ignore the tag names
-	if len(tagQuery) > 0 {
-		orTag := make([]string, len(tagQuery))
-		for i, tagValue := range tagQuery {
+		orTag := make([]string, len(values))
+		for i, tagValue := range values {
 			orTag[i] = `tags LIKE ? ESCAPE '\'`
 			params = append(params, `%`+strings.ReplaceAll(tagValue, `%`, `\%`)+`%`)
 		}
+
+		// each separate tag key is an independent condition
 		conditions = append(conditions, "("+strings.Join(orTag, "OR ")+")")
+
+		totalTags += len(values)
+		if totalTags > b.QueryTagsLimit {
+			return "", nil, fmt.Errorf("too many tags: %d > %d", totalTags, b.QueryTagsLimit)
+		}
 	}
 
 	if filter.Since != nil {
