@@ -85,9 +85,9 @@ func (b BadgerBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch
 
 		for c := 0; ; c++ {
 			// fmt.Println("  iteration", c)
-			if c > 10 {
-				panic("")
-			}
+			// if c > 10 {
+			// 	panic("")
+			// }
 
 			// we will go through all the iterators in batches until we have pulled all the required results
 			for q, query := range queries {
@@ -253,11 +253,6 @@ func (b BadgerBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch
 				// what am I supposed to do here?
 			} else if totalPulled >= limit {
 				// fmt.Println("have enough!")
-
-				// once we reached the limit we will stop fetching from the iterator that has gone further
-				// we just mark it as exhausted so we will never try it again
-				exhausted[furtherIter] = true
-				remainingUnexhausted--
 
 				// we will exclude this oldest number as it is not relevant anymore
 				// (we now want to keep track only of the oldest among the remaining iterators)
