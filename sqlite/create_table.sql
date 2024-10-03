@@ -14,6 +14,8 @@ CREATE INDEX IF NOT EXISTS pubkeyprefix ON event(pubkey);
 
 CREATE INDEX IF NOT EXISTS kindidx ON event(kind);
 
+CREATE INDEX IF NOT EXISTS contentidx ON event(content);
+
 CREATE INDEX IF NOT EXISTS timeidx ON event(created_at DESC);
 
 CREATE INDEX IF NOT EXISTS kindtimeidx ON event(kind, created_at DESC);
