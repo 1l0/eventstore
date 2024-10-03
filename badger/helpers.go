@@ -1,13 +1,14 @@
 package badger
 
 import (
+	"cmp"
 	"encoding/binary"
 	"encoding/hex"
 	"math"
 	"strconv"
 	"strings"
 
-	mergesortedslices "github.com/fiatjaf/merge-sorted-slices"
+	mergesortedslices "fiatjaf.com/lib/merge-sorted-slices"
 	"github.com/nbd-wtf/go-nostr"
 	"golang.org/x/exp/slices"
 )
@@ -146,7 +147,7 @@ func getAddrTagElements(tagValue string) (kind uint16, pkb []byte, d string) {
 
 // mergeSortMultipleBatches takes the results of multiple iterators, which are already sorted,
 // and merges them into a single big sorted slice
-func mergeSortMultiple(batches [][]*nostr.Event, limit int) []*nostr.Event {
+func mergeSortMultiple(batches [][]iterEvent, limit int, dst []iterEvent) []iterEvent {
 	// clear up empty lists here while simultaneously computing the total count.
 	// this helps because if there are a bunch of empty lists then this pre-clean
 	//   step will get us in the faster 'merge' branch otherwise we would go to the other.
@@ -162,32 +163,47 @@ func mergeSortMultiple(batches [][]*nostr.Event, limit int) []*nostr.Event {
 		}
 	}
 
+	if limit == -1 {
+		limit = total
+	}
+
 	// this amazing equation will ensure that if one of the two sides goes very small (like 1 or 2)
 	//   the other can go very high (like 500) and we're still in the 'merge' branch.
 	// if values go somewhere in the middle then they may match the 'merge' branch (batches=20,limit=70)
 	//   or not (batches=25, limit=60)
 	if math.Log(float64(len(batches)*2))+math.Log(float64(limit)) < 8 {
-		return mergesortedslices.MergeFuncLimitNoEmptyLists(batches, nostr.CompareEventPtr, limit)
+		if dst == nil {
+			dst = make([]iterEvent, limit)
+		} else if cap(dst) < limit {
+			dst = slices.Grow(dst, limit-len(dst))
+		}
+		dst = dst[0:limit]
+		return mergesortedslices.MergeFuncNoEmptyListsIntoSlice(dst, batches, compareIterEvent)
 	} else {
-		// use quicksort in a dumb way that will still be fast because it's cheated
-		merged := make([]*nostr.Event, total)
+		if dst == nil {
+			dst = make([]iterEvent, total)
+		} else if cap(dst) < total {
+			dst = slices.Grow(dst, total-len(dst))
+		}
+		dst = dst[0:total]
 
+		// use quicksort in a dumb way that will still be fast because it's cheated
 		lastIndex := 0
 		for _, batch := range batches {
-			n := copy(merged[lastIndex:], batch)
-			lastIndex += n
+			copy(dst[lastIndex:], batch)
+			lastIndex += len(batch)
 		}
 
-		slices.SortFunc(merged, nostr.CompareEventPtr)
+		slices.SortFunc(dst, compareIterEvent)
 
-		if limit > len(merged) {
-			limit = len(merged)
-		}
-		for i, j := 0, limit-1; i < j; i, j = i+1, j-1 {
-			merged[i], merged[j] = merged[j], merged[i]
+		for i, j := 0, total-1; i < j; i, j = i+1, j-1 {
+			dst[i], dst[j] = dst[j], dst[i]
 		}
 
-		return merged[0:limit]
+		if limit < len(dst) {
+			return dst[0:limit]
+		}
+		return dst
 	}
 }
 
@@ -200,7 +216,7 @@ func batchSizePerNumberOfQueries(totalFilterLimit int, numberOfQueries int) int 
 
 	return int(
 		math.Ceil(
-			math.Pow(float64(totalFilterLimit), 0.90) / math.Pow(float64(numberOfQueries), 0.71),
+			math.Pow(float64(totalFilterLimit), 0.80) / math.Pow(float64(numberOfQueries), 0.71),
 		),
 	)
 }
@@ -217,4 +233,21 @@ func filterMatchesTags(ef *nostr.Filter, event *nostr.Event) bool {
 func swapDelete[A any](arr []A, i int) []A {
 	arr[i] = arr[len(arr)-1]
 	return arr[:len(arr)-1]
+}
+
+func compareIterEvent(a, b iterEvent) int {
+	if a.Event == nil {
+		if b.Event == nil {
+			return 0
+		} else {
+			return -1
+		}
+	} else if b.Event == nil {
+		return 1
+	}
+
+	if a.CreatedAt == b.CreatedAt {
+		return strings.Compare(a.ID, b.ID)
+	}
+	return cmp.Compare(a.CreatedAt, b.CreatedAt)
 }
