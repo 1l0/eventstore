@@ -21,7 +21,7 @@ type iterEvent struct {
 
 var BatchFilled = errors.New("batch-filled")
 
-func (b BadgerBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (chan *nostr.Event, error) {
+func (b *BadgerBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (chan *nostr.Event, error) {
 	ch := make(chan *nostr.Event)
 
 	if filter.Search != "" {
@@ -33,8 +33,6 @@ func (b BadgerBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch
 	if err != nil {
 		return nil, err
 	}
-
-	slices.SortFunc(queries, func(a, b query) int { return slices.Compare(a.prefix, b.prefix) })
 
 	// max number of events we'll return
 	limit := b.MaxLimit / 4
