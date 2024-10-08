@@ -34,7 +34,7 @@ func (b *PebbleBackend) CountEvents(ctx context.Context, filter nostr.Filter) (i
 		defer it.Close()
 		it.Last()
 
-		for it.SeekLT(q.startingPoint); b.ValidForPrefix(it, q.prefix); it.Prev() {
+		for it.SeekLT(b.UpperBound(q.startingPoint)); b.ValidForPrefix(it, q.prefix); it.Prev() {
 			select {
 			case <-ctx.Done():
 				return 0, fmt.Errorf("context canceled")

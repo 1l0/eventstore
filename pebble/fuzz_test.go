@@ -63,7 +63,7 @@ func FuzzQuery(f *testing.F) {
 			return
 		}
 		it.Last()
-		it.SeekLT([]byte{1})
+		it.SeekLT(db.UpperBound([]byte{1}))
 		if it.Valid() {
 			key := it.Key()
 			idx := key[1:]
