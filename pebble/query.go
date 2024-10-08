@@ -126,7 +126,6 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 					if !it.Valid() {
 						// fmt.Println("      reached end")
 						exhaust(q)
-						it.Prev()
 						break
 					}
 
@@ -140,7 +139,6 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 						if createdAt < since {
 							// fmt.Println("        reached since", createdAt, "<", since)
 							exhaust(q)
-							it.Prev()
 							break
 						}
 					}
