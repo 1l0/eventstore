@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/hex"
 
+	"github.com/cockroachdb/pebble"
 	"github.com/nbd-wtf/go-nostr"
 )
 
 func (b *PebbleBackend) DeleteEvent(ctx context.Context, evt *nostr.Event) error {
-	batch := b.NewBatch()
-	defer batch.Close()
+	// batch := b.NewBatch()
+	// defer batch.Close()
 
 	idx := make([]byte, 1, 5)
 	idx[0] = rawEventStorePrefix
@@ -20,7 +21,7 @@ func (b *PebbleBackend) DeleteEvent(ctx context.Context, evt *nostr.Event) error
 	prefix[0] = indexIdPrefix
 	copy(prefix[1:], idPrefix8)
 
-	it, err := batch.NewIter(nil)
+	it, err := b.NewIter(nil)
 	if err != nil {
 		return err
 	}
@@ -36,18 +37,18 @@ func (b *PebbleBackend) DeleteEvent(ctx context.Context, evt *nostr.Event) error
 	}
 
 	// calculate all index keys we have for this event and delete them
-	for _, k := range b.getIndexKeysForEvent(evt, idx[1:]) {
-		if err := batch.Delete(k, nil); err != nil {
+	for k := range b.getIndexKeysForEvent(evt, idx[1:]) {
+		if err := b.Delete(k, pebble.Sync); err != nil {
 			return err
 		}
 	}
 
 	// delete the raw event
-	batch.Delete(idx, nil)
+	b.Delete(idx, pebble.Sync)
 
-	if err := batch.Commit(nil); err != nil {
-		return err
-	}
+	// if err := batch.Commit(nil); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

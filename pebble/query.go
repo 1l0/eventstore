@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
+	"log"
 
 	"github.com/cockroachdb/pebble"
 	bin "github.com/fiatjaf/eventstore/internal/binary"
@@ -15,6 +17,8 @@ type iterEvent struct {
 	*nostr.Event
 	q int
 }
+
+var BatchFilled = errors.New("batch-filled")
 
 func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (chan *nostr.Event, error) {
 	ch := make(chan *nostr.Event)
@@ -28,8 +32,6 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 	if err != nil {
 		return nil, err
 	}
-
-	slices.SortFunc(queries, func(a, b query) int { return slices.Compare(a.prefix, b.prefix) })
 
 	// max number of events we'll return
 	limit := b.MaxLimit / 4
@@ -78,27 +80,18 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 		var firstPhaseResults []iterEvent
 
 		for q := range queries {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			prefixIterOptions := func(prefix []byte) *pebble.IterOptions {
-				return &pebble.IterOptions{
-					LowerBound: prefix,
-					UpperBound: b.keyUpperBound(prefix),
-				}
-			}
-
-			it, err := b.NewIter(prefixIterOptions(queries[q].prefix))
+			// ub := b.UpperBound(queries[q].prefix)
+			it, err := b.NewIter(&pebble.IterOptions{
+				LowerBound: queries[q].prefix,
+				UpperBound: queries[q].startingPoint,
+			})
 			if err != nil {
 				return
 			}
-
 			iterators[q] = it
 			defer iterators[q].Close()
-			iterators[q].SeekGE(queries[q].startingPoint)
+			iterators[q].Last()
+			iterators[q].SeekLT(queries[q].startingPoint)
 			results[q] = make([]iterEvent, 0, batchSizePerQuery*2)
 		}
 
@@ -180,6 +173,7 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 
 					event := &nostr.Event{}
 					if err := bin.Unmarshal(val, event); err != nil {
+						log.Printf("pebble: value read error (id %x): %s\n", val[0:32], err)
 						return
 					}
 
@@ -258,11 +252,13 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 					pulledPerQuery[q]++
 					pulledThisIteration++
 					if pulledThisIteration > batchSizePerQuery {
-						return
+						it.Prev()
+						break
 					}
 					if pulledPerQuery[q] >= limit {
 						exhaust(q)
-						return
+						it.Prev()
+						break
 					}
 					it.Prev()
 				}
@@ -404,26 +400,9 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 		}
 
 		for _, evt := range combinedResults {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
 			ch <- evt.Event
 		}
 	}()
 
 	return ch, nil
-}
-
-func (b *PebbleBackend) keyUpperBound(lb []byte) []byte {
-	end := make([]byte, len(lb))
-	copy(end, lb)
-	for i := len(end) - 1; i >= 0; i-- {
-		end[i] = end[i] + 1
-		if end[i] != 0 {
-			return end[:i+1]
-		}
-	}
-	return nil // no upper-bound
 }

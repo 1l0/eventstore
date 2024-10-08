@@ -1,7 +1,6 @@
 package pebble
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -19,18 +18,23 @@ func (b *PebbleBackend) CountEvents(ctx context.Context, filter nostr.Filter) (i
 		return 0, err
 	}
 
-	batch := b.NewBatch()
-	defer batch.Close()
+	// batch := b.NewBatch()
+	// defer batch.Close()
 
 	// actually iterate
 	for _, q := range queries {
-		it, er := batch.NewIter(nil)
+		// ub := b.UpperBound(q.prefix)
+		it, er := b.NewIter(&pebble.IterOptions{
+			LowerBound: q.prefix,
+			UpperBound: q.startingPoint,
+		})
 		if er != nil {
 			return 0, err
 		}
 		defer it.Close()
+		it.Last()
 
-		for it.SeekGE(q.startingPoint); b.ValidForPrefix(it, q.prefix); it.Prev() {
+		for it.SeekLT(q.startingPoint); b.ValidForPrefix(it, q.prefix); it.Prev() {
 			select {
 			case <-ctx.Done():
 				return 0, fmt.Errorf("context canceled")
@@ -57,7 +61,7 @@ func (b *PebbleBackend) CountEvents(ctx context.Context, filter nostr.Filter) (i
 				count++
 			} else {
 				// fetch actual event
-				value, closer, err := batch.Get(idx)
+				value, closer, err := b.Get(idx)
 				if err != nil {
 					return 0, err
 				}
@@ -76,13 +80,9 @@ func (b *PebbleBackend) CountEvents(ctx context.Context, filter nostr.Filter) (i
 		}
 	}
 
-	if err := batch.Commit(nil); err != nil {
-		return 0, err
-	}
+	// if err := batch.Commit(nil); err != nil {
+	// 	return 0, err
+	// }
 
 	return count, nil
-}
-
-func (b *PebbleBackend) ValidForPrefix(it *pebble.Iterator, prefix []byte) bool {
-	return it.Valid() && bytes.HasPrefix(it.Key(), prefix)
 }

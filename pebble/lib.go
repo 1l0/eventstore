@@ -1,12 +1,14 @@
 package pebble
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/fiatjaf/eventstore"
 	"github.com/nbd-wtf/go-nostr"
-	// "github.com/fiatjaf/eventstore"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 	indexTagAddrPrefix    byte = 8
 )
 
-// var _ eventstore.Store = (*PebbleBackend)(nil)
+var _ eventstore.Store = (*PebbleBackend)(nil)
 
 type PebbleBackend struct {
 	Path     string
@@ -35,7 +37,7 @@ type PebbleBackend struct {
 
 	*pebble.DB
 
-	lastId atomic.Uint32
+	serial atomic.Uint32
 }
 
 func (b *PebbleBackend) Init() error {
@@ -45,20 +47,37 @@ func (b *PebbleBackend) Init() error {
 	}
 	b.DB = db
 
-	itr, err := b.NewIter(nil)
+	if err := b.runMigrations(); err != nil {
+		return fmt.Errorf("error running migrations: %w", err)
+	}
+
+	if b.MaxLimit == 0 {
+		b.MaxLimit = 500
+	}
+
+	it, err := b.NewIter(&pebble.IterOptions{
+		LowerBound: []byte{0},
+		UpperBound: []byte{1},
+	})
 	if err != nil {
 		return err
 	}
-	if itr.Last() {
-		if k := itr.Key(); k != nil {
-			b.lastId.Store(binary.BigEndian.Uint32(k))
+	it.Last()
+	it.SeekLT([]byte{1})
+	if it.Valid() {
+		if k := it.Key(); k != nil {
+			idx := k[1:]
+			serial := binary.BigEndian.Uint32(idx)
+			b.serial.Store(serial)
+		} else {
+			return fmt.Errorf("error initializing serial: %w", err)
 		}
 	}
-	if err := itr.Close(); err != nil {
+	if err := it.Close(); err != nil {
 		return err
 	}
 
-	return b.runMigrations()
+	return nil
 }
 
 func (b *PebbleBackend) Close() {
@@ -66,8 +85,32 @@ func (b *PebbleBackend) Close() {
 }
 
 func (b *PebbleBackend) Serial() []byte {
-	v := b.lastId.Add(1)
-	vb := make([]byte, 4)
-	binary.BigEndian.PutUint32(vb[:], uint32(v))
+	next := b.serial.Add(1)
+	vb := make([]byte, 5)
+	vb[0] = rawEventStorePrefix
+	binary.BigEndian.PutUint32(vb[1:], next)
 	return vb
+}
+
+func (b *PebbleBackend) ValidForPrefix(it *pebble.Iterator, prefix []byte) bool {
+	return it.Valid() && bytes.HasPrefix(it.Key(), prefix)
+}
+
+func (b *PebbleBackend) UpperBound(lowerBound []byte) []byte {
+	end := make([]byte, len(lowerBound))
+	copy(end, lowerBound)
+	for i := len(end) - 1; i >= 0; i-- {
+		end[i] = end[i] + 1
+		if end[i] != 0 {
+			return end[:i+1]
+		}
+	}
+	return nil // no upper-bound
+}
+
+func (b *PebbleBackend) PrefixIterOptions(prefix []byte) *pebble.IterOptions {
+	return &pebble.IterOptions{
+		LowerBound: prefix,
+		UpperBound: b.UpperBound(prefix),
+	}
 }
