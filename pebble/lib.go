@@ -27,8 +27,9 @@ const (
 var _ eventstore.Store = (*PebbleBackend)(nil)
 
 type PebbleBackend struct {
-	Path     string
-	MaxLimit int
+	Path                  string
+	MaxLimit              int
+	PebbleOptionsModifier func(*pebble.Options) *pebble.Options
 
 	// Experimental
 	SkipIndexingTag func(event *nostr.Event, tagName string, tagValue string) bool
@@ -41,7 +42,12 @@ type PebbleBackend struct {
 }
 
 func (b *PebbleBackend) Init() error {
-	db, err := pebble.Open(b.Path, nil)
+	opts := &pebble.Options{}
+	if b.PebbleOptionsModifier != nil {
+		opts = b.PebbleOptionsModifier(opts)
+	}
+
+	db, err := pebble.Open(b.Path, opts)
 	if err != nil {
 		return err
 	}
