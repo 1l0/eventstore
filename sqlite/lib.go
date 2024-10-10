@@ -9,6 +9,16 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type SQLiteBackend struct {
+	*sqlx.DB
+	DatabaseURL       string
+	QueryLimit        int
+	QueryIDsLimit     int
+	QueryAuthorsLimit int
+	QueryKindsLimit   int
+	QueryTagsLimit    int
+}
+
 const (
 	queryLimit        = 100
 	queryIDsLimit     = 500
@@ -19,7 +29,7 @@ const (
 
 var _ eventstore.Store = (*SQLiteBackend)(nil)
 
-//go:embed create_table.sql
+//go:embed create.sql
 var createTable string
 
 func (b *SQLiteBackend) Init() error {
@@ -52,4 +62,8 @@ func (b *SQLiteBackend) Init() error {
 		b.QueryTagsLimit = queryTagsLimit
 	}
 	return nil
+}
+
+func (b *SQLiteBackend) Close() {
+	b.DB.Close()
 }

@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS event (
     kind integer NOT NULL,
     tags jsonb NOT NULL,
     content text NOT NULL,
-    sig text NOT NULL
+    sig text NOT NULL,
+    meta_name text
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ididx ON event(id);
@@ -14,7 +15,7 @@ CREATE INDEX IF NOT EXISTS pubkeyprefix ON event(pubkey);
 
 CREATE INDEX IF NOT EXISTS kindidx ON event(kind);
 
-CREATE INDEX IF NOT EXISTS contentidx ON event(content);
+CREATE INDEX IF NOT EXISTS metanameidx ON event(meta_name COLLATE NOCASE);
 
 CREATE INDEX IF NOT EXISTS timeidx ON event(created_at DESC);
 

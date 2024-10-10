@@ -11,7 +11,7 @@ import (
 )
 
 func (b SQLiteBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch chan *nostr.Event, err error) {
-	query, params, err := b.queryEventsSql(filter, false)
+	query, params, err := b.buildQuery(filter, false)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (b SQLiteBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (ch
 }
 
 func (b SQLiteBackend) CountEvents(ctx context.Context, filter nostr.Filter) (int64, error) {
-	query, params, err := b.queryEventsSql(filter, true)
+	query, params, err := b.buildQuery(filter, true)
 	if err != nil {
 		return 0, err
 	}
@@ -62,7 +62,7 @@ func makePlaceHolders(n int) string {
 	return strings.TrimRight(strings.Repeat("?,", n), ",")
 }
 
-func (b SQLiteBackend) queryEventsSql(filter nostr.Filter, doCount bool) (string, []any, error) {
+func (b SQLiteBackend) buildQuery(filter nostr.Filter, doCount bool) (string, []any, error) {
 	conditions := make([]string, 0, 7)
 	params := make([]any, 0, 20)
 
