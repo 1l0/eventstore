@@ -32,7 +32,7 @@ func (b *PebbleBackend) CountEvents(ctx context.Context, filter nostr.Filter) (i
 			return 0, err
 		}
 		defer it.Close()
-		it.Last()
+		// it.Last()
 
 		for it.SeekLT(b.UpperBound(q.startingPoint)); b.ValidForPrefix(it, q.prefix); it.Prev() {
 			select {

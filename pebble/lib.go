@@ -68,7 +68,7 @@ func (b *PebbleBackend) Init() error {
 	if err != nil {
 		return err
 	}
-	it.Last()
+	// it.Last()
 	it.SeekLT(b.UpperBound([]byte{1}))
 	if it.Valid() {
 		if k := it.Key(); k != nil {

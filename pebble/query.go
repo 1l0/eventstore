@@ -90,7 +90,7 @@ func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (c
 			}
 			iterators[q] = it
 			defer iterators[q].Close()
-			iterators[q].Last()
+			// iterators[q].Last()
 			iterators[q].SeekLT(b.UpperBound(queries[q].startingPoint))
 			results[q] = make([]iterEvent, 0, batchSizePerQuery*2)
 		}
