@@ -9,9 +9,6 @@ import (
 )
 
 func (b *PebbleBackend) DeleteEvent(ctx context.Context, evt *nostr.Event) error {
-	// batch := b.NewBatch()
-	// defer batch.Close()
-
 	idx := make([]byte, 1, 5)
 	idx[0] = rawEventStorePrefix
 
@@ -45,10 +42,6 @@ func (b *PebbleBackend) DeleteEvent(ctx context.Context, evt *nostr.Event) error
 
 	// delete the raw event
 	b.Delete(idx, pebble.Sync)
-
-	// if err := batch.Commit(nil); err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

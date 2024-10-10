@@ -18,7 +18,7 @@ type iterEvent struct {
 	q int
 }
 
-var BatchFilled = errors.New("batch-filled")
+var ErrBatchFiiled = errors.New("batch-filled")
 
 func (b *PebbleBackend) QueryEvents(ctx context.Context, filter nostr.Filter) (chan *nostr.Event, error) {
 	ch := make(chan *nostr.Event)

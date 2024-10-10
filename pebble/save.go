@@ -11,9 +11,6 @@ import (
 )
 
 func (b *PebbleBackend) SaveEvent(ctx context.Context, evt *nostr.Event) error {
-	// batch := b.NewBatch()
-	// defer batch.Close()
-
 	// query event by id to ensure we don't save duplicates
 	id, _ := hex.DecodeString(evt.ID)
 	prefix := make([]byte, 1+8)
@@ -47,10 +44,6 @@ func (b *PebbleBackend) SaveEvent(ctx context.Context, evt *nostr.Event) error {
 			return err
 		}
 	}
-
-	// if err := batch.Commit(nil); err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
