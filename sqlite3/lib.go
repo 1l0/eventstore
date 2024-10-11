@@ -1,6 +1,8 @@
 package sqlite3
 
 import (
+	_ "embed"
+
 	"github.com/fiatjaf/eventstore"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -17,21 +19,18 @@ const (
 
 var _ eventstore.Store = (*SQLite3Backend)(nil)
 
-var ddls = []string{
-	`CREATE TABLE IF NOT EXISTS event (
-       id text NOT NULL,
-       pubkey text NOT NULL,
-       created_at integer NOT NULL,
-       kind integer NOT NULL,
-       tags jsonb NOT NULL,
-       content text NOT NULL,
-       sig text NOT NULL);`,
-	`CREATE UNIQUE INDEX IF NOT EXISTS ididx ON event(id)`,
-	`CREATE INDEX IF NOT EXISTS pubkeyprefix ON event(pubkey)`,
-	`CREATE INDEX IF NOT EXISTS timeidx ON event(created_at DESC)`,
-	`CREATE INDEX IF NOT EXISTS kindidx ON event(kind)`,
-	`CREATE INDEX IF NOT EXISTS kindtimeidx ON event(kind,created_at DESC)`,
+type SQLite3Backend struct {
+	*sqlx.DB
+	DatabaseURL       string
+	QueryLimit        int
+	QueryIDsLimit     int
+	QueryAuthorsLimit int
+	QueryKindsLimit   int
+	QueryTagsLimit    int
 }
+
+//go:embed sql/init.sql
+var sqlInit string
 
 func (b *SQLite3Backend) Init() error {
 	db, err := sqlx.Connect("sqlite3", b.DatabaseURL)
@@ -42,11 +41,9 @@ func (b *SQLite3Backend) Init() error {
 	db.Mapper = reflectx.NewMapperFunc("json", sqlx.NameMapper)
 	b.DB = db
 
-	for _, ddl := range ddls {
-		_, err = b.DB.Exec(ddl)
-		if err != nil {
-			return err
-		}
+	_, err = b.DB.Exec(sqlInit)
+	if err != nil {
+		return err
 	}
 
 	if b.QueryLimit == 0 {
@@ -65,4 +62,8 @@ func (b *SQLite3Backend) Init() error {
 		b.QueryTagsLimit = queryTagsLimit
 	}
 	return nil
+}
+
+func (b *SQLite3Backend) Close() {
+	b.DB.Close()
 }
